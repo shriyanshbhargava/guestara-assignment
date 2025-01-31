@@ -3,14 +3,7 @@ import { useCalendarState } from "../hooks/useCalendarState";
 import { Modal } from "./Modal";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarEvent } from "./CalendarEvent";
-
-const CALENDAR_COLORS = {
-  blue: "bg-blue-500 text-white hover:bg-blue-600",
-  green: "bg-green-500 text-white hover:bg-green-600",
-  pink: "bg-pink-500 text-white hover:bg-pink-600",
-  gray: "bg-gray-500 text-white hover:bg-gray-600",
-  red: "bg-red-500 text-white hover:bg-red-600",
-};
+import { COLORS } from "../constants/colors";
 
 export function Calendar() {
   const {
@@ -30,6 +23,7 @@ export function Calendar() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const calendarRef = useRef(null);
   const tableRef = useRef(null);
+  const sidebarRef = useRef(null);
 
   const daysInMonth = new Date(
     state.currentDate.getFullYear(),
@@ -37,11 +31,53 @@ export function Calendar() {
     0
   ).getDate();
 
-  const snapToDay = (date) => {
+  const scrollToDate = useCallback((date) => {
+    requestAnimationFrame(() => {
+      const targetCell = tableRef.current?.querySelector(
+        `[data-date="${date.toISOString().split("T")[0]}"]`
+      );
+      const container = calendarRef.current;
+      const sidebarElement = sidebarRef.current;
+
+      if (!targetCell || !container) {
+        console.warn("Target cell or container not found");
+        return;
+      }
+
+      // Get sidebar width dynamically
+      const sidebarWidth = sidebarElement?.offsetWidth ?? 192;
+      const containerWidth = container.clientWidth;
+      const cellRect = targetCell.getBoundingClientRect();
+
+      // Check if horizontal scrolling is supported
+      if (container.scrollWidth <= container.clientWidth) {
+        return;
+      }
+
+      const scrollPosition =
+        targetCell.offsetLeft -
+        sidebarWidth -
+        (containerWidth - cellRect.width) / 2 +
+        container.scrollLeft;
+
+      container.scrollTo({
+        left: Math.max(0, scrollPosition),
+        behavior: "smooth",
+      });
+    });
+  }, []);
+
+  const goToToday = useCallback(() => {
+    const today = new Date();
+    navigateToDate(today, true);
+    scrollToDate(today);
+  }, [navigateToDate, scrollToDate]);
+
+  const snapToDay = useCallback((date) => {
     const newDate = new Date(date);
     newDate.setHours(0, 0, 0, 0);
     return newDate;
-  };
+  }, []);
 
   const calculateEventStyle = useCallback(
     (event) => {
@@ -184,8 +220,8 @@ export function Calendar() {
         end: new Date(date.getTime() + defaultDuration * 60 * 1000),
         resourceId,
         color:
-          Object.keys(CALENDAR_COLORS)[
-            Math.floor(Math.random() * Object.keys(CALENDAR_COLORS).length)
+          Object.keys(COLORS)[
+            Math.floor(Math.random() * Object.keys(COLORS).length)
           ],
       };
       addEvent(newEvent);
@@ -203,7 +239,6 @@ export function Calendar() {
       deleteEvent(selectedEventForDeletion.id);
       setSelectedEventForDeletion(null);
     }
-
     setShowDeleteModal(false);
   };
 
@@ -220,36 +255,6 @@ export function Calendar() {
     addResource(newResource);
     alert(`${newResource.title} Added !`);
   };
-
-  const goToToday = useCallback(() => {
-    const today = new Date();
-    navigateToDate(today, true);
-
-    setTimeout(() => {
-      const targetCell = tableRef.current.querySelector(
-        `[data-date="${today.toISOString().split("T")[0]}"]`
-      );
-      const container = calendarRef.current;
-
-      if (targetCell && container) {
-        const sidebarWidth = 192;
-        const containerWidth = container.clientWidth;
-        const cellRect = targetCell.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-
-        const scrollPosition =
-          targetCell.offsetLeft -
-          sidebarWidth -
-          (containerWidth - cellRect.width) / 2 +
-          container.scrollLeft;
-
-        container.scrollTo({
-          left: Math.max(0, scrollPosition),
-          behavior: "smooth",
-        });
-      }
-    }, 100);
-  }, [navigateToDate]);
 
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -276,6 +281,12 @@ export function Calendar() {
     };
   }, [resizingEvent, handleResizeMove, handleResizeEnd]);
 
+  useEffect(() => {
+    if (state.targetScrollDate) {
+      scrollToDate(state.targetScrollDate);
+    }
+  }, [state.targetScrollDate, scrollToDate]);
+
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
       <CalendarHeader
@@ -290,7 +301,10 @@ export function Calendar() {
           <table className="w-full border-collapse bg-white" ref={tableRef}>
             <thead className="sticky top-0 z-10 bg-gray-50">
               <tr>
-                <th className="sticky left-0 z-20 w-48 min-w-[12rem] border-b border-r border-gray-200 bg-gray-50 p-3 text-left font-semibold text-gray-700">
+                <th
+                  ref={sidebarRef}
+                  className="sticky left-0 z-20 w-48 min-w-[12rem] border-b border-r border-gray-200 bg-gray-50 p-3 text-left font-semibold text-gray-700"
+                >
                   Resources
                 </th>
                 {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -305,7 +319,7 @@ export function Calendar() {
                     <th
                       key={i}
                       className={`min-w-[120px] border-b border-r border-gray-200 p-2 text-sm ${
-                        isToday ? "bg-blue-200" : ""
+                        isToday ? "bg-blue-50" : ""
                       }`}
                     >
                       <div className="font-semibold text-gray-700">
@@ -342,7 +356,7 @@ export function Calendar() {
                     return (
                       <td
                         key={i}
-                        className={`relative border-b border-r border-gray-200 ${
+                        className={`relative pb-3 border-b border-r border-gray-200 ${
                           hasMultipleEvents ? "min-h-[200px]" : "h-20"
                         }`}
                         data-date={date.toISOString().split("T")[0]}
@@ -364,7 +378,7 @@ export function Calendar() {
                               handleDragStart={handleDragStart}
                               handleEventClick={handleEventClick}
                               handleResizeStart={handleResizeStart}
-                              colors={CALENDAR_COLORS}
+                              colors={COLORS}
                             />
                           ))}
                         </div>

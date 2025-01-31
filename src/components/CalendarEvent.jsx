@@ -1,4 +1,5 @@
 import { COLORS } from "../constants/colors"
+import PropTypes from 'prop-types';
 
 export const CalendarEvent = ({ event, calculateEventStyle, handleDragStart, handleEventClick, handleResizeStart }) => {
   const formatTime = (date) => {
@@ -52,4 +53,17 @@ export const CalendarEvent = ({ event, calculateEventStyle, handleDragStart, han
     </div>
   )
 }
+
+CalendarEvent.propTypes = {
+  event: PropTypes.shape({
+    title: PropTypes.string.isRequired,
+    start: PropTypes.instanceOf(Date).isRequired,
+    end: PropTypes.instanceOf(Date).isRequired,
+    color: PropTypes.string.isRequired,
+  }).isRequired,
+  calculateEventStyle: PropTypes.func.isRequired,
+  handleDragStart: PropTypes.func.isRequired,
+  handleEventClick: PropTypes.func.isRequired,
+  handleResizeStart: PropTypes.func.isRequired,
+};
 
