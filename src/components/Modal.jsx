@@ -9,13 +9,13 @@ export const Modal = ({ isOpen, onClose, onConfirm, title, message }) => {
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-white"
+            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-black"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+            className="px-4 py-2 bg-red-400 text-white rounded-md hover:bg-red-500 transition-colors"
           >
             Delete
           </button>
