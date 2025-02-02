@@ -18,8 +18,7 @@ export function CalendarHeader({
           Today
         </button>
         <button
-                    className="p-2 text-gray-600 bg-gray-100 hover:bg-gray-300 rounded-full "
-
+          className="p-2 text-gray-600 bg-gray-100 hover:bg-gray-300 rounded-full "
           onClick={() => {
             const newDate = new Date(currentDate);
             newDate.setMonth(newDate.getMonth() - 1);
@@ -43,6 +42,7 @@ export function CalendarHeader({
           <BiChevronRight className="w-5 h-5" />
         </button>
       </div>
+
       <button
         onClick={handleAddResource}
         className="flex items-center px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"

@@ -15,9 +15,6 @@ export function Calendar() {
     navigateToDate,
   } = useCalendarState();
   const [draggedEvent, setDraggedEvent] = useState(null);
-  const [resizingEvent, setResizingEvent] = useState(null);
-  const [resizeDirection, setResizeDirection] = useState(null);
-  const [resizePreview, setResizePreview] = useState(null);
   const [selectedEventForDeletion, setSelectedEventForDeletion] =
     useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -31,6 +28,17 @@ export function Calendar() {
     0
   ).getDate();
 
+  const roundToNearestFifteen = useCallback((date) => {
+    const minutes = date.getMinutes();
+    const roundedMinutes = Math.round(minutes / 15) * 15;
+    const newDate = new Date(date);
+    newDate.setMinutes(roundedMinutes);
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
+    return newDate;
+  }, []);
+
+  // ScrollToDate function remains the same
   const scrollToDate = useCallback((date) => {
     requestAnimationFrame(() => {
       const targetCell = tableRef.current?.querySelector(
@@ -39,33 +47,42 @@ export function Calendar() {
       const container = calendarRef.current;
       const sidebarElement = sidebarRef.current;
 
+      // Check if the target cell and container are found
       if (!targetCell || !container) {
         console.warn("Target cell or container not found");
         return;
       }
 
-      // Get sidebar width dynamically
       const sidebarWidth = sidebarElement?.offsetWidth ?? 192;
       const containerWidth = container.clientWidth;
-      const cellRect = targetCell.getBoundingClientRect();
+      const cellWidth = targetCell.offsetWidth;
 
-      // Check if horizontal scrolling is supported
-      if (container.scrollWidth <= container.clientWidth) {
-        return;
-      }
+      const cellLeft = targetCell.offsetLeft;
+      const scrollPosition = cellLeft - sidebarWidth - cellWidth;
 
-      const scrollPosition =
-        targetCell.offsetLeft -
-        sidebarWidth -
-        (containerWidth - cellRect.width) / 2 +
-        container.scrollLeft;
+      const maxScroll = container.scrollWidth - containerWidth;
+      const finalScrollPosition = Math.max(
+        0,
+        Math.min(scrollPosition, maxScroll)
+      );
 
       container.scrollTo({
-        left: Math.max(0, scrollPosition),
+        left: finalScrollPosition,
         behavior: "smooth",
       });
     });
   }, []);
+
+  // Add useEffect to call scrollToDate on initial load
+  useEffect(() => {
+    // Small delay to ensure DOM elements are properly loaded
+    const timer = setTimeout(() => {
+      // Scroll to today's date on initial load
+      scrollToDate(new Date());
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [scrollToDate]);
 
   const goToToday = useCallback(() => {
     const today = new Date();
@@ -73,118 +90,24 @@ export function Calendar() {
     scrollToDate(today);
   }, [navigateToDate, scrollToDate]);
 
-  const snapToDay = useCallback((date) => {
-    const newDate = new Date(date);
-    newDate.setHours(0, 0, 0, 0);
-    return newDate;
+  const calculateEventStyle = useCallback((event) => {
+    const startDate = new Date(event.start);
+    const endDate = new Date(event.end);
+    const daysDuration = Math.round(
+      (endDate - startDate) / (1000 * 60 * 60 * 24)
+    );
+
+    return {
+      width: `${Math.max(1, daysDuration) * 80}px`,
+      position: "absolute",
+      left: "0",
+    };
   }, []);
-
-  const calculateEventStyle = useCallback(
-    (event) => {
-      const startDate = new Date(event.start);
-      const endDate = new Date(event.end);
-      const daysDuration = Math.round(
-        (endDate - startDate) / (1000 * 60 * 60 * 24)
-      );
-
-      if (resizePreview && event.id === resizingEvent?.id) {
-        return {
-          width: `${resizePreview.duration * 100}%`,
-          transform: `translateX(${resizePreview.offset * 100}%)`,
-        };
-      }
-
-      return {
-        width: `${Math.max(1, daysDuration) * 100}%`,
-      };
-    },
-    [resizePreview, resizingEvent]
-  );
 
   const handleDragStart = (event, e) => {
     setDraggedEvent(event);
     e.dataTransfer.setData("text/plain", "");
   };
-
-  const handleResizeStart = (event, direction, e) => {
-    e.stopPropagation();
-    setResizingEvent(event);
-    setResizeDirection(direction);
-    setResizePreview({
-      duration: Math.ceil((event.end - event.start) / (1000 * 60 * 60 * 24)),
-      offset: 0,
-    });
-  };
-
-  const handleResizeMove = useCallback(
-    (date) => {
-      if (!resizingEvent) return;
-
-      const currentDate = snapToDay(date);
-      const eventStart = snapToDay(resizingEvent.start);
-      const eventEnd = snapToDay(resizingEvent.end);
-
-      const diffDays = Math.round(
-        (currentDate - eventStart) / (1000 * 60 * 60 * 24)
-      );
-
-      if (resizeDirection === "end") {
-        const newDuration = Math.max(1, diffDays);
-        setResizePreview({
-          duration: newDuration,
-          offset: 0,
-        });
-      } else {
-        const totalDays = Math.round(
-          (eventEnd - eventStart) / (1000 * 60 * 60 * 24)
-        );
-        const newOffset = Math.round(
-          (currentDate - eventStart) / (1000 * 60 * 60 * 24)
-        );
-        const newDuration = totalDays - newOffset;
-
-        if (newDuration >= 1) {
-          setResizePreview({
-            duration: newDuration,
-            offset: newOffset,
-          });
-        }
-      }
-    },
-    [resizingEvent, resizeDirection, snapToDay]
-  );
-
-  const handleResizeEnd = useCallback(() => {
-    if (!resizingEvent || !resizePreview) return;
-
-    const newEvent = { ...resizingEvent };
-    const eventStart = snapToDay(resizingEvent.start);
-    const eventEnd = snapToDay(resizingEvent.end);
-
-    if (resizeDirection === "end") {
-      newEvent.end = new Date(
-        eventStart.getTime() + resizePreview.duration * 24 * 60 * 60 * 1000
-      );
-    } else {
-      newEvent.start = new Date(
-        eventEnd.getTime() - resizePreview.duration * 24 * 60 * 60 * 1000
-      );
-    }
-
-    newEvent.start.setHours(
-      resizingEvent.start.getHours(),
-      resizingEvent.start.getMinutes()
-    );
-    newEvent.end.setHours(
-      resizingEvent.end.getHours(),
-      resizingEvent.end.getMinutes()
-    );
-
-    updateEvent(newEvent);
-    setResizingEvent(null);
-    setResizeDirection(null);
-    setResizePreview(null);
-  }, [resizingEvent, resizePreview, resizeDirection, updateEvent, snapToDay]);
 
   const handleDrop = (date, resourceId) => {
     if (!draggedEvent) return;
@@ -212,12 +135,23 @@ export function Calendar() {
       e.target === e.currentTarget ||
       e.target.getAttribute("data-cell-area") === "true"
     ) {
-      const defaultDuration = 60;
+      const startTime = roundToNearestFifteen(
+        new Date(
+          date.getFullYear(),
+          date.getMonth(),
+          date.getDate(),
+          0, // Set hour to 12 (noon)
+          0 // Set minutes to 0
+        )
+      );
+
+      const endTime = new Date(startTime);
+
       const newEvent = {
-        id: Math.random().toString(36).substr(2, 9),
+        id: Math.random().toString(36).slice(2, 11),
         title: `Event ${state.events.length + 1}`,
-        start: date,
-        end: new Date(date.getTime() + defaultDuration * 60 * 1000),
+        start: startTime,
+        end: endTime,
         resourceId,
         color:
           Object.keys(COLORS)[
@@ -256,36 +190,41 @@ export function Calendar() {
     alert(`${newResource.title} Added !`);
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!resizingEvent) return;
-      const cell = document.elementFromPoint(e.clientX, e.clientY);
-      if (!cell?.hasAttribute("data-date")) return;
+  const handleResize = useCallback(
+    (event, newWidth, direction, newStart = null) => {
+      const startDate = newStart || new Date(event.start);
+      const cellWidth = 80;
+      const newDuration = (newWidth / cellWidth) * 24 * 60 * 60 * 1000;
 
-      const date = new Date(cell.getAttribute("data-date"));
-      handleResizeMove(date);
-    };
+      const newEndDate = new Date(startDate.getTime() + newDuration);
 
-    const handleMouseUp = () => {
-      if (resizingEvent) {
-        handleResizeEnd();
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [resizingEvent, handleResizeMove, handleResizeEnd]);
+      updateEvent({
+        ...event,
+        start: startDate,
+        end: newEndDate,
+      });
+    },
+    [updateEvent]
+  );
 
   useEffect(() => {
     if (state.targetScrollDate) {
       scrollToDate(state.targetScrollDate);
     }
   }, [state.targetScrollDate, scrollToDate]);
+
+  const sortEventsByTime = (events) => {
+    return [...events].sort((a, b) => {
+      // First sort by start time
+      const timeCompare = a.start.getTime() - b.start.getTime();
+      if (timeCompare !== 0) return timeCompare;
+
+      // If start times are equal, sort by duration (shorter events first)
+      const aDuration = a.end.getTime() - a.start.getTime();
+      const bDuration = b.end.getTime() - b.start.getTime();
+      return aDuration - bDuration;
+    });
+  };
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">
@@ -303,7 +242,7 @@ export function Calendar() {
               <tr>
                 <th
                   ref={sidebarRef}
-                  className="sticky left-0 z-20 w-48 min-w-[12rem] border-b border-r border-gray-200 bg-gray-50 p-3 text-left font-semibold text-gray-700"
+                  className="sticky left-0 z-20 w-32 min-w-[12rem] border-b border-r border-gray-200 bg-gray-50 p-3 text-left font-semibold text-gray-700"
                 >
                   Resources
                 </th>
@@ -318,11 +257,11 @@ export function Calendar() {
                   return (
                     <th
                       key={i}
-                      className={`min-w-[120px] border-b border-r border-gray-200 p-2 text-sm ${
-                        isToday ? "bg-blue-50" : ""
+                      className={`max-w-sm border-b border-r border-gray-200 text-sm ${
+                        isToday ? "bg-blue-200" : ""
                       }`}
                     >
-                      <div className="font-semibold text-gray-700">
+                      <div className="font-semibold text-gray-700 p-2">
                         {date.toLocaleDateString("default", {
                           weekday: "short",
                           day: "numeric",
@@ -345,43 +284,50 @@ export function Calendar() {
                       state.currentDate.getMonth(),
                       i + 1
                     );
-                    const cellEvents = state.events.filter(
-                      (event) =>
-                        event.resourceId === resource.id &&
-                        new Date(event.start).toDateString() ===
-                          date.toDateString()
+                    const cellEvents = sortEventsByTime(
+                      state.events.filter(
+                        (event) =>
+                          event.resourceId === resource.id &&
+                          new Date(event.start).toDateString() ===
+                            date.toDateString()
+                      )
                     );
-                    const hasMultipleEvents = cellEvents.length > 1;
+                    const hasEvents = cellEvents.length > 0;
 
                     return (
                       <td
                         key={i}
-                        className={`relative pb-3 border-b border-r border-gray-200 ${
-                          hasMultipleEvents ? "min-h-[200px]" : "h-20"
+                        className={`relative border-b border-r border-gray-200 ${
+                          hasEvents ? "min-h-[120px]" : "h-20"
                         }`}
+                        style={{
+                          width: "80px",
+                          height: hasEvents
+                            ? `${Math.max(80, cellEvents.length * 70 + 5)}px`
+                            : "80px",
+                          padding: "6px 0px", // Added padding top and bottom
+                          margin: "6px",
+                        }}
                         data-date={date.toISOString().split("T")[0]}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={() => handleDrop(date, resource.id)}
-                        onClick={(e) => handleCellClick(e, date, resource.id)}
+                        onDoubleClick={(e) =>
+                          handleCellClick(e, date, resource.id)
+                        }
                       >
-                        <div
-                          className={`flex h-full flex-col gap-1 p-1 ${
-                            hasMultipleEvents ? "min-h-[120px]" : ""
-                          }`}
-                          data-cell-area="true"
-                        >
-                          {cellEvents.map((event) => (
-                            <CalendarEvent
-                              key={event.id}
-                              event={event}
-                              calculateEventStyle={calculateEventStyle}
-                              handleDragStart={handleDragStart}
-                              handleEventClick={handleEventClick}
-                              handleResizeStart={handleResizeStart}
-                              colors={COLORS}
-                            />
-                          ))}
-                        </div>
+                        <div className="w-full" data-cell-area="true" />
+                        {cellEvents.map((event, index) => (
+                          <CalendarEvent
+                            key={event.id}
+                            event={event}
+                            calculateEventStyle={calculateEventStyle}
+                            handleDragStart={handleDragStart}
+                            handleEventClick={handleEventClick}
+                            onResize={handleResize}
+                            index={index}
+                            total={cellEvents.length}
+                          />
+                        ))}
                       </td>
                     );
                   })}

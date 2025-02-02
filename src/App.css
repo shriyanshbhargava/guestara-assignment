@@ -4,3 +4,24 @@
   padding: 2rem;
   text-align: center;
 }
+
+.calendar-event {
+  transition: all 0.2s ease-out;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.calendar-event:active {
+  cursor: grabbing;
+}
+
+.calendar-grid {
+  position: relative;
+}
+
+.calendar-event:hover {
+  z-index: 100 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}

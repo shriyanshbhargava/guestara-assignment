@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 export const Modal = ({ isOpen, onClose, onConfirm, title, message }) => {
   if (!isOpen) return null;
 
@@ -24,3 +26,12 @@ export const Modal = ({ isOpen, onClose, onConfirm, title, message }) => {
     </div>
   );
 };
+
+Modal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onConfirm: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  message: PropTypes.string.isRequired,
+};
+

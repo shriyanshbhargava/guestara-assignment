@@ -136,3 +136,4 @@ DatePickerButton.propTypes = {
   currentDate: PropTypes.instanceOf(Date).isRequired,
   onSelect: PropTypes.func.isRequired,
 };
+

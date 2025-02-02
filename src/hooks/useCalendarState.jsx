@@ -10,6 +10,14 @@ const defaultResources = [
   { id: "E", title: "Resource E" },
   { id: "F", title: "Resource F" },
   { id: "G", title: "Resource G" },
+  { id: "H", title: "Resource H" },
+  { id: "I", title: "Resource I" },
+  { id: "J", title: "Resource J" },
+  { id: "K", title: "Resource K" },
+  { id: "L", title: "Resource L" },
+  { id: "M", title: "Resource M" },
+  { id: "N", title: "Resource N" },
+  { id: "O", title: "Resource O" },
 ];
 
 const initialState = {
@@ -92,7 +100,7 @@ export function useCalendarState() {
           ...prev,
           targetScrollDate: null,
         }));
-      }, 1000); 
+      }, 1000);
     }
   };
 
