@@ -16,6 +16,11 @@ This project is a ReactJS application built with Vite that replicates the Mobisc
 - Delete events with an alert popup
 - Persistent state even after a hard refresh
 
+## How to Use
+- Create an event: Double-click on the desired cell to add an event.
+- Move an event: Drag and drop the event to another time slot.
+- Delete an event: Click on an event to delete it with a confirmation modal.
+
 ## Getting Started
 
 ### 1. Clone the Repository
@@ -42,18 +47,20 @@ npm run dev
 
 ```sh
 ├── src
-│   ├── components    # Reusable UI components
-│   ├── pages         # Main pages of the app
 │   ├── assets        # Images and styles
+│   ├── components    # Reusable UI components
+│   ├── constants     # Constant values and config
 │   ├── hooks         # Custom hooks
-│   ├── utils         # Utility functions
 │   ├── App.jsx       # Root component
 │   ├── main.jsx      # Entry point
-│   ├── styles.css    # Global styles
+│   ├── App.css       # Global styles
+│   ├── index.css     # Additional styles
 ├── public            # Static assets
 ├── package.json      # Project metadata and dependencies
+├── package-lock.json # Dependency lock file
+├── README.md         # Documentation
 ├── vite.config.js    # Vite configuration
-└── README.md         # Documentation
+
 ```
 
 ### 5. 3 things that you learned from this assignment?
