@@ -40,36 +40,42 @@ export const CalendarEvent = ({
     if (!isResizing) return;
 
     const handleMouseMove = (e) => {
-      if (!resizeRef.current || !initialPositionRef.current || !initialWidthRef.current) return;
+      if (
+        !resizeRef.current ||
+        !initialPositionRef.current ||
+        !initialWidthRef.current
+      )
+        return;
 
       const deltaX = e.clientX - initialPositionRef.current;
       const cellWidth = 80;
 
-      if (resizeDirection === 'right') {
+      if (resizeDirection === "right") {
         // Right resize - only adjust width
         const newWidth = Math.max(80, initialWidthRef.current + deltaX);
-        onResize(event, newWidth, 'right');
-      } else if (resizeDirection === 'left') {
+        onResize(event, newWidth, "right");
+      } else if (resizeDirection === "left") {
         // Left resize - adjust both position and width
         const newWidth = Math.max(80, initialWidthRef.current - deltaX);
-        
+
         // Calculate days to adjust based on the actual pixel movement
         const daysToAdjust = Math.floor(deltaX / cellWidth);
-        
+
         // Only update if we've moved at least one cell width
         if (Math.abs(deltaX) >= cellWidth / 2) {
           // Calculate new start date
           const newStart = new Date(event.start);
           newStart.setDate(newStart.getDate() + daysToAdjust);
-          
+
           // Ensure the new width maintains the grid alignment
-          const adjustedWidth = initialWidthRef.current - (daysToAdjust * cellWidth);
+          const adjustedWidth =
+            initialWidthRef.current - daysToAdjust * cellWidth;
           const finalWidth = Math.max(80, adjustedWidth);
-          
-          onResize(event, finalWidth, 'left', newStart);
+
+          onResize(event, finalWidth, "left", newStart);
         } else {
           // If we haven't moved enough for a day change, just update the visual width
-          onResize(event, newWidth, 'right');
+          onResize(event, newWidth, "right");
         }
       }
     };
@@ -115,7 +121,7 @@ export const CalendarEvent = ({
       <div
         className="absolute top-0 bottom-0 left-0 w-2 cursor-col-resize group
           hover:bg-black/10 transition-colors"
-        onMouseDown={(e) => handleResizeStart(e, 'left')}
+        onMouseDown={(e) => handleResizeStart(e, "left")}
       >
         <div
           className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 
@@ -134,7 +140,7 @@ export const CalendarEvent = ({
       <div
         className="absolute top-0 bottom-0 right-0 w-2 cursor-col-resize group
           hover:bg-black/10 transition-colors"
-        onMouseDown={(e) => handleResizeStart(e, 'right')}
+        onMouseDown={(e) => handleResizeStart(e, "right")}
       >
         <div
           className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 

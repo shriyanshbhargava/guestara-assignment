@@ -38,7 +38,6 @@ export function Calendar() {
     return newDate;
   }, []);
 
-  // ScrollToDate function remains the same
   const scrollToDate = useCallback((date) => {
     requestAnimationFrame(() => {
       const targetCell = tableRef.current?.querySelector(
@@ -47,20 +46,16 @@ export function Calendar() {
       const container = calendarRef.current;
       const sidebarElement = sidebarRef.current;
 
-      // Check if the target cell and container are found
       if (!targetCell || !container) {
         console.warn("Target cell or container not found");
         return;
       }
 
       const sidebarWidth = sidebarElement?.offsetWidth ?? 192;
-      const containerWidth = container.clientWidth;
-      const cellWidth = targetCell.offsetWidth;
-
       const cellLeft = targetCell.offsetLeft;
-      const scrollPosition = cellLeft - sidebarWidth - cellWidth;
+      const scrollPosition = cellLeft - sidebarWidth;
 
-      const maxScroll = container.scrollWidth - containerWidth;
+      const maxScroll = container.scrollWidth - container.clientWidth;
       const finalScrollPosition = Math.max(
         0,
         Math.min(scrollPosition, maxScroll)
@@ -73,11 +68,8 @@ export function Calendar() {
     });
   }, []);
 
-  // Add useEffect to call scrollToDate on initial load
   useEffect(() => {
-    // Small delay to ensure DOM elements are properly loaded
     const timer = setTimeout(() => {
-      // Scroll to today's date on initial load
       scrollToDate(new Date());
     }, 100);
 
